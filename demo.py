@@ -1,5 +1,5 @@
 from sentient import sentient
-import os, dotenv
+import os, time, dotenv
 import asyncio
 from colorama import Fore
 from datetime import datetime
@@ -11,6 +11,9 @@ model_name = os.environ.get("MODEL_NAME")
 print(f"{Fore.YELLOW}base_url: {Fore.GREEN}{base_url}")
 print(f"{Fore.YELLOW}model_name: {Fore.GREEN}{model_name}")
 
+start_time = time.time()  # 记录开始时间
+
+instruction_path = "./sentient/task_instructions/retrieve.txt"
 if not os.path.exists("saves"):
     os.makedirs("saves")
 timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -37,7 +40,7 @@ if "-cnv" in os.sys.argv:
             f.write(f"答案: {result}\n")
 
 else:
-    with open("input.txt", "r") as f:
+    with open(instruction_path, "r") as f:
         prompt = f.read()
     with open(save_path, "a") as f:
         result = asyncio.run(
@@ -50,3 +53,7 @@ else:
         )
         f.write(f"问题: {prompt}\n")
         f.write(f"答案: {result}\n")
+
+end_time = time.time()  # 记录结束时间
+elapsed_time = end_time - start_time  # 计算运行时间
+print(f"程序运行时间： {elapsed_time} 秒")

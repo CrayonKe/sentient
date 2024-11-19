@@ -8,4 +8,5 @@ results/
 dist/
 test.py
 test_instructor.py
+.history/
 saves/

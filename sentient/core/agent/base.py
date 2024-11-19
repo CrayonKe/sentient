@@ -15,6 +15,7 @@ from sentient.utils.function_utils import get_function_schema
 from sentient.utils.logger import logger
 from sentient.utils.providers import LLMProvider
 
+
 class BaseAgent:
     def __init__(
         self,
@@ -48,7 +49,7 @@ class BaseAgent:
         # if self.provider_name == "google":
         #     self.client = instructor.from_gemini(
         #         client=genai.GenerativeModel(
-        #             model_name=model_name, 
+        #             model_name=model_name,
         #         )
         #     )
         if self.provider_name == "groq":
@@ -56,7 +57,7 @@ class BaseAgent:
             self.client = instructor.from_groq(self.client, mode=Mode.TOOLS)
         elif self.provider_name == "anthropic":
             self.client = instructor.from_anthropic(Anthropic())
-        elif self.provider_name == "openrouter": 
+        elif self.provider_name == "openrouter":
             # use litellm for openrouter as instructor currently does not seem to have support for openrouter
             self.client = instructor.from_litellm(completion=completion)
         elif self.provider_name == "together":
@@ -65,7 +66,7 @@ class BaseAgent:
         else:
             self.client = openai.Client(**client_config)
             self.client = instructor.from_openai(self.client, mode=Mode.TOOLS)
-        
+
         # Set model name
         self.model_name = model_name
 
@@ -83,16 +84,14 @@ class BaseAgent:
     def _initialize_messages(self):
         self.messages = [{"role": "user", "content": self.system_prompt}]
         self.messages.append(
-                {
-                    "role": "assistant",
-                    "content": "Understood. I will properly follow the instructions given. Can you provide me with the objective and other details in JSON format?",
-                }
-            )
+            {
+                "role": "assistant",
+                "content": "Understood. I will properly follow the instructions given. Can you provide me with the objective and other details in JSON format?",
+            }
+        )
 
     # @traceable(run_type="chain", name="agent_run")
-    async def run(
-        self, input_data: BaseModel, screenshot: str = None
-    ) -> BaseModel:
+    async def run(self, input_data: BaseModel, screenshot: str = None) -> BaseModel:
         if not isinstance(input_data, self.input_format):
             raise ValueError(f"Input data must be of type {self.input_format.__name__}")
 
@@ -126,12 +125,12 @@ class BaseAgent:
             )
 
         self.messages.append(
-                {
-                    "role": "assistant",
-                    "content": "Understood. I will properly follow the instructions given. Can you provide me with the current page DOM and URL please?",
-                }
-            )
-        
+            {
+                "role": "assistant",
+                "content": "Understood. I will properly follow the instructions given. Can you provide me with the current page DOM and URL please?",
+            }
+        )
+
         # input dom and current page url in a separate message so that the LLM can pay attention to completed tasks better. *based on personal vibe check*
         if hasattr(input_data, "current_page_dom") and hasattr(
             input_data, "current_page_url"
@@ -151,16 +150,22 @@ class BaseAgent:
             try:
                 response = None
                 if len(self.tools_list) == 0:
-                    try: 
-                        response: self.output_format = self.client.chat.completions.create(
-                        model=self.model_name,
-                        messages=self.messages,
-                        response_model=self.output_format,
-                        max_retries=3,
-                        max_tokens=1000 if self.provider_name == "anthropic" else None,
+                    try:
+                        response: self.output_format = (
+                            self.client.chat.completions.create(
+                                model=self.model_name,
+                                messages=self.messages,
+                                response_model=self.output_format,
+                                max_retries=3,
+                                max_tokens=(
+                                    1000 if self.provider_name == "anthropic" else None
+                                ),
+                            )
                         )
                     except InstructorRetryException as e:
-                        print(f"InstructorRetryException: client - {self.provider_name} model - {self.model_name}")
+                        print(
+                            f"InstructorRetryException: client - {self.provider_name} model - {self.model_name}"
+                        )
                         print(f"Error: {str(e)}")
                         print(f"Error details: {e.__dict__}")
                     except Exception as e:
@@ -173,7 +178,7 @@ class BaseAgent:
                         tool_choice="auto",
                         tools=self.tools_list,
                     )
-                
+
                 assert isinstance(response, self.output_format)
                 return response
 
@@ -191,15 +196,14 @@ class BaseAgent:
                 #     continue
 
                 # parsed_response_content: self.output_format = response_message.parsed
-                
+
             except AssertionError:
-                    raise TypeError(
-                        f"Expected response_message to be of type {self.output_format.__name__}, but got {type(response).__name__}")
+                raise TypeError(
+                    f"Expected response_message to be of type {self.output_format.__name__}, but got {type(response).__name__}"
+                )
             except Exception as e:
                 logger.error(f"Unexpected error: {str(e)}")
                 raise
-
-            
 
     async def _append_tool_response(self, tool_call):
         function_name = tool_call.function.name
